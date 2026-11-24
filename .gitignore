@@ -2,3 +2,4 @@ bin/
 salida_*.csv
 .DS_Store
 *.dSYM/
+data/cache/
