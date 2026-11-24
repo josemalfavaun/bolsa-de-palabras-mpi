@@ -12,6 +12,7 @@
 
 #include <chrono>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <map>
@@ -116,6 +117,17 @@ inline std::string leer_archivo(const std::string& ruta) {
     return std::string(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
 }
 
+// User-Agent que identifica al programa (Project Gutenberg pide que los clientes
+// automaticos se identifiquen). Se puede cambiar con la variable de entorno
+// BOLSA_USER_AGENT; no puede contener comillas simples.
+inline std::string agente_usuario() {
+    const char* env = std::getenv("BOLSA_USER_AGENT");
+    std::string ua = env ? env : "";
+    if (ua.empty() || ua.find('\'') != std::string::npos)
+        ua = "bolsa-de-palabras-mpi/1.0 (+https://github.com/josemalfavaun/bolsa-de-palabras-mpi; proyecto escolar ITAM)";
+    return ua;
+}
+
 // Devuelve el texto de "fuente". Si empieza con http:// o https:// lo descarga
 // con curl; si no, lo trata como ruta de un archivo local (util para probar sin
 // red). Lanza std::runtime_error si algo sale mal.
@@ -129,7 +141,7 @@ inline std::string descargar(const std::string& fuente) {
         const std::string comando =
             "curl --fail --silent --show-error --location --retry 3 --retry-delay 1 "
             "--connect-timeout 20 --max-time 300 "
-            "-A 'bolsa-de-palabras-mpi (proyecto escolar ITAM)' '" + fuente + "'";
+            "-A '" + agente_usuario() + "' '" + fuente + "'";
         FILE* tuberia = popen(comando.c_str(), "r");
         if (!tuberia) throw std::runtime_error("No pude ejecutar curl (esta instalado?)");
         char buffer[65536];

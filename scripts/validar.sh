@@ -5,8 +5,9 @@
 # Ej.:    scripts/validar.sh data/urls_6_libros.txt 1 2 4 7
 #
 # Para varios k (1, la mitad, todos los libros del archivo) y cada q compara con
-# `cmp` el CSV serial contra el CSV paralelo. Ojo: descarga los libros de nuevo
-# en cada corrida; no abuses con listas enormes (Gutenberg es un servicio gratuito).
+# `cmp` el CSV serial contra el CSV paralelo. Con URLs reales descarga los libros de nuevo
+# en cada corrida (muchas peticiones a Gutenberg): mejor usa la lista de rutas locales que
+# genera scripts/descargar_cache.sh (data/cache/urls_locales.txt).
 #
 # Variables opcionales:
 #   MPIRUN="mpirun --oversubscribe"   para usar mas procesos que nucleos

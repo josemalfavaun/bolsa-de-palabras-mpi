@@ -1,18 +1,23 @@
 #!/usr/bin/env bash
 # Mide tiempos y speed-up: serial vs MPI para varios numeros de procesos.
 #
-# Uso:    scripts/medir.sh <archivo_urls> [repeticiones=5] [q1 q2 ...]
+# Uso:    scripts/medir.sh <archivo_urls> [repeticiones=3] [q1 q2 ...]
 # Ej.:    scripts/medir.sh data/urls_6_libros.txt 5 1 2 3 6
 #
 # T_serial = mediana de las repeticiones de bin/serial.
 # T_mpi(q) = mediana de las repeticiones de bin/bolsa_mpi con q procesos.
-# speed-up = T_serial / T_mpi(q).   Los datos crudos quedan en resultados/mediciones.csv
+# speed-up = T_serial / T_mpi(q).   Los datos crudos quedan en resultados/mediciones_<fecha_hora>.csv
+#
+# OJO: con URLs de Gutenberg cada corrida vuelve a descargar los libros (k x repeticiones x
+# (1 + numero de valores de q) peticiones). Gutenberg bloquea IPs que parecen automaticas, asi que
+# para medir el computo usa la lista de rutas locales de scripts/descargar_cache.sh, y haz solo
+# unas pocas corridas con URLs reales (p. ej. 3 repeticiones) para la medicion final.
 #
 # Variable opcional:  MPIRUN="mpirun --oversubscribe"
 set -u
 
 URLS=${1:?Uso: scripts/medir.sh <archivo_urls> [repeticiones] [q1 q2 ...]}
-REPS=${2:-5}
+REPS=${2:-3}
 shift
 [ $# -gt 0 ] && shift
 QS=${*:-1 2 3 4 6}
@@ -28,7 +33,7 @@ TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 K=$(grep -cvE '^[[:space:]]*(#|$)' "$URLS")
 mkdir -p "$RAIZ/resultados"
-CSV="$RAIZ/resultados/mediciones.csv"
+CSV="$RAIZ/resultados/mediciones_$(date +%Y%m%d_%H%M%S).csv"
 echo "version,q,repeticion,segundos" > "$CSV"
 
 echo "Libros (k) = $K, repeticiones = $REPS"
@@ -56,4 +61,4 @@ for q in $QS; do
     awk -v q="$q" -v t="$T" -v s="$T_SERIAL" 'BEGIN { printf "%4d %14.4f s %9.3fx %12.3f\n", q, t, s/t, s/t/q }'
 done
 echo
-echo "Datos crudos en: resultados/mediciones.csv"
+echo "Datos crudos en: ${CSV#$RAIZ/}"

@@ -88,18 +88,33 @@ Si algún libro falla al descargarse, todos los procesos terminan con un mensaje
 
 T_serial y T_paralelo incluyen todo: descarga, conteo, unión, matriz y escritura del CSV. El desglose por fase se imprime aparte. El tiempo de descarga depende de la red, por eso `scripts/medir.sh` repite cada corrida y reporta la mediana.
 
+## Acceso a Project Gutenberg (errores 503 / 403)
+
+Project Gutenberg es un sitio pensado para personas y puede bloquear las IPs que le parecen automáticas, o estar en mantenimiento; en ambos casos suele responder 503 o 403. Por eso:
+
+- El programa se identifica con un `User-Agent` propio (se puede cambiar con la variable `BOLSA_USER_AGENT`).
+- Para validar y medir el cómputo **no hace falta descargar una y otra vez**: `scripts/descargar_cache.sh` baja cada libro una sola vez (con pausa entre libros) a `data/cache/` y genera `data/cache/urls_locales.txt`, que los programas aceptan igual que una lista de URLs.
+- Haz pocas corridas con URLs reales (por ejemplo, la medición final con 3 repeticiones).
+- Si el sitio principal no responde, `data/urls_6_libros_espejo.txt` apunta al espejo oficial de Gutenberg (https://gutenberg.pglaf.org/), que sirve los mismos archivos. Más espejos: https://www.gutenberg.org/MIRRORS.ALL
+- Si una descarga falla, abre la URL en el navegador, guarda el texto en `data/cache/` con el nombre que indica el script (por ejemplo `pg46.txt`) y vuelve a correr `scripts/descargar_cache.sh`.
+
 ## Validación y mediciones
 
 ```bash
-# ¿El CSV paralelo es idéntico al serial para distintos k y q?
-scripts/validar.sh data/urls_6_libros.txt 1 2 4 7
+# 1) Descarga los libros una sola vez a data/cache/
+scripts/descargar_cache.sh data/urls_6_libros.txt
 
-# Tiempos y speed-up (5 repeticiones, q = 1 2 3 6)
-scripts/medir.sh data/urls_6_libros.txt 5 1 2 3 6
-scripts/medir.sh data/urls_grandes.txt 5 1 2 4 8
+# 2) ¿El CSV paralelo es idéntico al serial para distintos k y q? (sin tocar Gutenberg)
+scripts/validar.sh data/cache/urls_locales.txt 1 2 4 7
+
+# 3) Tiempos y speed-up del cómputo con los libros locales (3 repeticiones, q = 1 2 3 6)
+scripts/medir.sh data/cache/urls_locales.txt 3 1 2 3 6
+
+# 4) Medición final con descarga real (pocas repeticiones): aquí se ve el efecto de paralelizar la descarga
+scripts/medir.sh data/urls_6_libros.txt 3 1 2 3 6
 ```
 
-`mediciones.csv` queda en `resultados/`. Usa `MPIRUN="mpirun --oversubscribe"` si necesitas más procesos que núcleos.
+Los datos crudos quedan en `resultados/mediciones_<fecha_hora>.csv` (una corrida no sobrescribe a la anterior). Usa `MPIRUN="mpirun --oversubscribe"` si necesitas más procesos que núcleos.
 
 ### Pruebas sin internet
 
@@ -117,7 +132,22 @@ mpirun -np 4 ./bin/bolsa_mpi /tmp/urls_http.txt
 
 ## Resultados
 
-Pendiente: correr `scripts/medir.sh` en el equipo de pruebas y pegar aquí la tabla (equipo, sistema operativo, versión de MPI, número de núcleos, T_serial, T_mpi y speed-up por q).
+Detalle completo, tablas por corrida y análisis en [`resultados/RESULTADOS.md`](resultados/RESULTADOS.md). Resumen (MacBook Air, Open MPI 5.0.11, 6 libros del curso, descarga real desde el espejo oficial de Gutenberg, mediana de 3 repeticiones, corrida B):
+
+| q | T_mpi (s) | speed-up | eficiencia |
+|---|-----------|----------|------------|
+| 1 | 17.93 | 1.018x | 1.018 |
+| 2 | 10.19 | 1.792x | 0.896 |
+| 3 | 12.17 | 1.500x | 0.500 |
+| 6 | 11.79 | 1.549x | 0.258 |
+
+T_serial = 18.25 s. El CSV paralelo es idéntico al serial en todos los casos validados (k = 1, 3, 6; q = 1, 2, 4, 7). El speed-up supera 1.2x para q = 2, 3 y 6 en las dos corridas realizadas; los valores varían con la red.
+
+## Limitaciones y mejoras posibles
+
+- **Reparto estático:** el reparto cíclico no conoce el tamaño de los libros; si unos pesan mucho más que otros, un proceso se convierte en cuello de botella (ver el caso q = 3 en `resultados/RESULTADOS.md`). Un reparto dinámico lo mejoraría.
+- **El vocabulario se une en un solo proceso:** el proceso 0 reconstruye la matriz; es la parte serial del programa.
+- **Tokenización:** los caracteres no ASCII separan palabras (por ejemplo, "café" se cuenta como "caf").
 
 ## Uso de IA generativa
 
