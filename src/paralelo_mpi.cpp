@@ -282,7 +282,7 @@ int ejecutar(int rank, int q, int argc, char** argv) {
             std::printf("Tiempo paralelo:                %.6f s\n", t_total);
             std::printf("   fase 1 (descarga + conteo):  %.6f s   [descarga max: %.6f, conteo max: %.6f]\n",
                         t_fase1, max_descarga, max_conteo);
-            std::printf("   fase 2 (juntar en maestro):  %.6f s\n", t_union);
+            std::printf("   fase 2 (reconstruir en maestro): %.6f s\n", t_union);
             std::printf("   matriz:                      %.6f s\n", t_matriz);
             std::printf("   escritura del CSV:           %.6f s\n", t_escritura);
             std::printf("Speed-up:                       %.3fx\n", speedup);

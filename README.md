@@ -4,6 +4,8 @@ Bolsa de palabras para k libros de Project Gutenberg en C++: versión serial y v
 
 Proyecto de Clausura de *Cómputo Paralelo y en la Nube* (ITAM, 2026b, Dr. Octavio Gutiérrez).
 
+**Autores:** José Malfavaun Gorostizaga y Natalia Gómez Álvarez.
+
 El programa recibe el número de procesos y una lista de URLs de Project Gutenberg, descarga los libros dinámicamente, construye la matriz de bolsa de palabras (un renglón por libro, una columna por palabra del vocabulario global) y la guarda en un CSV. Funciona para cualquier k libros y cualquier q procesos (incluso q > k), e imprime el speed-up de la versión paralela contra la serial.
 
 ## Estructura
@@ -12,8 +14,11 @@ El programa recibe el número de procesos y una lista de URLs de Project Gutenbe
 src/comun.hpp          Código compartido: descarga, tokenizador, conteo, matriz, CSV y versión serial
 src/serial.cpp         Programa serial
 src/paralelo_mpi.cpp   Programa paralelo con MPI
+src/explicar.hpp        Mensajes narrados de la opcion --explicar
 scripts/validar.sh     Compara el CSV serial contra el MPI para varios k y q
 scripts/medir.sh       Mide tiempos y speed-up (medianas) y guarda los datos crudos
+scripts/descargar_cache.sh  Baja los libros una vez a data/cache/ para probar sin pegarle a Gutenberg
+scripts/demo.sh        Demostracion narrada para la presentacion
 tests/                 Pruebas sin internet (libros falsos, servidor lento, implementación de referencia en Python)
 data/                  Listas de URLs de ejemplo
 resultados/            Mediciones

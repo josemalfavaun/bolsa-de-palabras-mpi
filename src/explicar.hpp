@@ -120,10 +120,11 @@ inline void explicar_mpi(const DatosMPI& d) {
     std::printf("El proceso mas lento fue el %d. Los demas terminan antes y ESPERAN: la fase\n", quien);
     std::printf("dura lo que dura el mas lento (%.4f s). Por eso importa repartir parejo.\n\n", d.t_fase1);
 
-    std::printf("PASO 2. Juntar resultados (%.4f s).\n", d.t_union);
+    std::printf("PASO 2. Juntar resultados (reconstruirlos en el proceso 0: %.4f s).\n", d.t_union);
     std::printf("Cada proceso empaqueta sus conteos en un texto (palabra, cuenta, palabra...)\n");
     std::printf("y lo manda al proceso 0 con MPI_Gather (tamanos) y MPI_Gatherv (datos).\n");
-    std::printf("Viajaron %.2f MB en total.\n\n", static_cast<double>(d.bytes_enviados) / 1e6);
+    std::printf("Viajaron %.2f MB en total. El envio en si tarda ~1 ms y no tiene cronometro aparte.\n\n",
+                static_cast<double>(d.bytes_enviados) / 1e6);
 
     std::printf("PASO 3. Solo el proceso 0: armar la matriz (%.4f s) y escribir el CSV (%.4f s).\n",
                 d.t_matriz, d.t_escritura);
