@@ -75,6 +75,14 @@ Serial y MPI usan exactamente las mismas funciones de `src/comun.hpp`, así que 
 
 Son las reglas por defecto de `CountVectorizer` de scikit-learn (el que usa la libreta de ejemplo del curso), salvo por los caracteres acentuados y el guion bajo (aquí separa palabras; en `CountVectorizer` se queda dentro de ellas).
 
+**Comparación medida con `CountVectorizer`.** Con los 6 libros del curso (texto de `gutenberg.pglaf.org`, solo el cuerpo), nuestro tokenizador produce un vocabulario de 17,362 palabras y `CountVectorizer` con sus valores por defecto produce 17,534: una diferencia de 172 palabras (1%). De las 191 palabras que solo tiene `CountVectorizer`, 185 son marcas de cursiva de Gutenberg pegadas con guion bajo (por ejemplo `_could_`) y 8 llevan caracteres acentuados. `tests/comparar_vocabulario.py` repite esta comparación (y otras variantes del tokenizador) sobre los libros locales:
+
+```bash
+python3 tests/comparar_vocabulario.py data/cache/urls_locales.txt
+```
+
+Un vocabulario distinto en la libreta del curso (por ejemplo, 15,170 palabras) no se explica por las reglas del tokenizador (la diferencia medida entre tokenizadores es de ~170 palabras); puede deberse a que la libreta usa otro texto de origen o un procesamiento adicional. Las reglas de este proyecto son las descritas arriba y son las mismas en la versión serial y en la MPI.
+
 ### Versión serial
 
 Para cada URL: descarga, cuenta las palabras en un `std::map<std::string,int>`; al final une el vocabulario, arma la matriz y escribe el CSV.
