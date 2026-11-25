@@ -54,6 +54,7 @@ struct Argumentos {
     std::string salida;
     std::string salida_serial = "salida_serial.csv";
     double tiempo_serial = -1;  // <= 0: el programa MPI lo mide el mismo
+    bool explicar = false;      // --explicar: mensajes para presentar el proyecto
 };
 
 inline Argumentos leer_argumentos(int argc, char** argv, const std::string& salida_defecto) {
@@ -68,6 +69,7 @@ inline Argumentos leer_argumentos(int argc, char** argv, const std::string& sali
         if (s == "--salida") a.salida = valor("--salida");
         else if (s == "--salida-serial") a.salida_serial = valor("--salida-serial");
         else if (s == "--tiempo-serial") a.tiempo_serial = std::stod(valor("--tiempo-serial"));
+        else if (s == "--explicar") a.explicar = true;
         else if (!s.empty() && s[0] == '-') throw std::runtime_error("Opcion desconocida: " + s);
         else if (a.archivo_urls.empty()) a.archivo_urls = s;
         else throw std::runtime_error("Argumento de sobra: " + s);

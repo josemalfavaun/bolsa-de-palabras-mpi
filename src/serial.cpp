@@ -1,11 +1,12 @@
 // serial.cpp - Bolsa de palabras, version serial.
 //
-// Uso: ./bin/serial <archivo_urls> [--salida salida_serial.csv]
+// Uso: ./bin/serial <archivo_urls> [--salida salida_serial.csv] [--explicar]
 
 #include <cstdio>
 #include <exception>
 
 #include "comun.hpp"
+#include "explicar.hpp"
 
 int main(int argc, char** argv) {
     try {
@@ -15,20 +16,25 @@ int main(int argc, char** argv) {
         bolsa::TiemposSerial t;
         const bolsa::Bolsa resultado = bolsa::bolsa_serial(urls, args.salida, t);
 
-        std::printf("=== Bolsa de palabras (version SERIAL) ===\n");
-        std::printf("Libros (k):              %zu\n", urls.size());
-        std::printf("Vocabulario (columnas):  %zu\n", resultado.vocabulario.size());
-        std::printf("Tiempo total:            %.6f s\n", t.total);
-        std::printf("   descarga:             %.6f s\n", t.descarga);
-        std::printf("   conteo de palabras:   %.6f s\n", t.conteo);
-        std::printf("   matriz:               %.6f s\n", t.matriz);
-        std::printf("   escritura del CSV:    %.6f s\n", t.escritura);
-        std::printf("Salida: %s\n", args.salida.c_str());
+        if (args.explicar) {
+            bolsa::explicar_serial(urls, resultado.vocabulario.size(), t.total, t.descarga, t.conteo,
+                                   t.matriz, t.escritura, args.salida);
+        } else {
+            std::printf("=== Bolsa de palabras (version SERIAL) ===\n");
+            std::printf("Libros (k):              %zu\n", urls.size());
+            std::printf("Vocabulario (columnas):  %zu\n", resultado.vocabulario.size());
+            std::printf("Tiempo total:            %.6f s\n", t.total);
+            std::printf("   descarga:             %.6f s\n", t.descarga);
+            std::printf("   conteo de palabras:   %.6f s\n", t.conteo);
+            std::printf("   matriz:               %.6f s\n", t.matriz);
+            std::printf("   escritura del CSV:    %.6f s\n", t.escritura);
+            std::printf("Salida: %s\n", args.salida.c_str());
+        }
         std::printf("#TIEMPO %.6f\n", t.total);  // linea para los scripts
         return 0;
     } catch (const std::exception& e) {
         std::fprintf(stderr, "ERROR: %s\n", e.what());
-        std::fprintf(stderr, "Uso: serial <archivo_urls> [--salida salida_serial.csv]\n");
+        std::fprintf(stderr, "Uso: serial <archivo_urls> [--salida salida_serial.csv] [--explicar]\n");
         return 1;
     }
 }

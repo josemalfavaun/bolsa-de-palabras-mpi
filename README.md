@@ -98,6 +98,17 @@ Project Gutenberg es un sitio pensado para personas y puede bloquear las IPs que
 - Si el sitio principal no responde, `data/urls_6_libros_espejo.txt` apunta al espejo oficial de Gutenberg (https://gutenberg.pglaf.org/), que sirve los mismos archivos. Más espejos: https://www.gutenberg.org/MIRRORS.ALL
 - Si una descarga falla, abre la URL en el navegador, guarda el texto en `data/cache/` con el nombre que indica el script (por ejemplo `pg46.txt`) y vuelve a correr `scripts/descargar_cache.sh`.
 
+## Demostración narrada (`--explicar`)
+
+Ambos programas aceptan la opción `--explicar`, que cambia la salida por una versión pensada para presentar: explica qué hace cada paso, muestra qué libros le tocan a cada proceso, dibuja barras de tiempo y compara serial contra paralelo. La salida normal (sin `--explicar`) no cambia, porque los scripts de validación y medición dependen de ella.
+
+```bash
+./bin/serial data/cache/urls_locales.txt --salida salida_serial.csv --explicar
+mpirun -np 4 ./bin/bolsa_mpi data/cache/urls_locales.txt --salida salida_paralela.csv --explicar
+```
+
+`scripts/demo.sh [archivo_urls] [procesos]` corre toda la demostración paso a paso (compila, serial, MPI, comparación de CSV con `cmp` y un vistazo a la tabla).
+
 ## Validación y mediciones
 
 ```bash

@@ -27,6 +27,7 @@
 #include <iostream>
 
 #include "comun.hpp"
+#include "explicar.hpp"
 
 using namespace bolsa;
 
@@ -158,13 +159,14 @@ int ejecutar(int rank, int q, int argc, char** argv) {
     // Fase 1: cada proceso descarga y cuenta sus libros (reparto ciclico).
     std::vector<int> mis_indices;
     std::vector<Conteo> mis_conteos;
-    double t_descarga = 0, t_conteo = 0;
+    double t_descarga = 0, t_conteo = 0, mis_bytes = 0;
     int fallos = 0;
     for (int i = rank; i < k; i += q) {
         try {
             const double a = MPI_Wtime();
             const std::string texto = descargar(urls[static_cast<size_t>(i)]);
             const double b = MPI_Wtime();
+            mis_bytes += static_cast<double>(texto.size());
             Conteo conteo = contar_palabras(texto);
             const double c = MPI_Wtime();
             t_descarga += b - a;
@@ -244,29 +246,54 @@ int ejecutar(int rank, int q, int argc, char** argv) {
     double max_descarga = 0, max_conteo = 0;
     MPI_Reduce(&t_descarga, &max_descarga, 1, MPI_DOUBLE, MPI_MAX, MAESTRO, comunicador);
     MPI_Reduce(&t_conteo, &max_conteo, 1, MPI_DOUBLE, MPI_MAX, MAESTRO, comunicador);
+    const double mio[2] = {t_descarga + t_conteo, mis_bytes};
+    std::vector<double> todos(static_cast<size_t>(2 * q), 0.0);
+    MPI_Gather(mio, 2, MPI_DOUBLE, todos.data(), 2, MPI_DOUBLE, MAESTRO, comunicador);
 
     if (rank == MAESTRO) {
         const double speedup = t_serial / t_total;
-        std::printf("=== Bolsa de palabras (version MPI) ===\n");
-        std::printf("Libros (k):                     %d\n", k);
-        std::printf("Procesos (q):                   %d\n", q);
-        std::printf("Vocabulario (columnas):         %zu\n", columnas);
-        std::printf("Tiempo serial:                  %.6f s  (%s)\n", t_serial,
-                    serial_medido_aqui ? "medido en esta corrida" : "dato recibido con --tiempo-serial");
-        std::printf("Tiempo paralelo:                %.6f s\n", t_total);
-        std::printf("   fase 1 (descarga + conteo):  %.6f s   [descarga max: %.6f, conteo max: %.6f]\n",
-                    t_fase1, max_descarga, max_conteo);
-        std::printf("   fase 2 (juntar en maestro):  %.6f s\n", t_union);
-        std::printf("   matriz:                      %.6f s\n", t_matriz);
-        std::printf("   escritura del CSV:           %.6f s\n", t_escritura);
-        std::printf("Speed-up:                       %.3fx\n", speedup);
-        std::printf("Eficiencia (speed-up / q):      %.3f\n", speedup / q);
-        std::printf("Speed-up > 1.2x (requisito):    %s\n", speedup > 1.2 ? "SI" : "NO");
-        if (serial_medido_aqui)
-            std::printf("Resultado identico al serial:   %s\n", coincide ? "SI" : "NO (!!)");
-        else
-            std::printf("Resultado identico al serial:   no verificado aqui (usa scripts/validar.sh)\n");
-        std::printf("Salida: %s\n", args.salida.c_str());
+        if (args.explicar) {
+            DatosMPI d;
+            d.q = q;
+            d.urls = urls;
+            for (int r = 0; r < q; ++r) {
+                d.t_ocupado.push_back(todos[static_cast<size_t>(2 * r)]);
+                d.bytes.push_back(todos[static_cast<size_t>(2 * r + 1)]);
+                d.bytes_enviados += static_cast<size_t>(tamanos[static_cast<size_t>(r)]);
+            }
+            d.t_serial = t_serial;
+            d.t_total = t_total;
+            d.t_fase1 = t_fase1;
+            d.t_union = t_union;
+            d.t_matriz = t_matriz;
+            d.t_escritura = t_escritura;
+            d.columnas = columnas;
+            d.serial_medido_aqui = serial_medido_aqui;
+            d.coincide = coincide;
+            d.salida = args.salida;
+            explicar_mpi(d);
+        } else {
+            std::printf("=== Bolsa de palabras (version MPI) ===\n");
+            std::printf("Libros (k):                     %d\n", k);
+            std::printf("Procesos (q):                   %d\n", q);
+            std::printf("Vocabulario (columnas):         %zu\n", columnas);
+            std::printf("Tiempo serial:                  %.6f s  (%s)\n", t_serial,
+                        serial_medido_aqui ? "medido en esta corrida" : "dato recibido con --tiempo-serial");
+            std::printf("Tiempo paralelo:                %.6f s\n", t_total);
+            std::printf("   fase 1 (descarga + conteo):  %.6f s   [descarga max: %.6f, conteo max: %.6f]\n",
+                        t_fase1, max_descarga, max_conteo);
+            std::printf("   fase 2 (juntar en maestro):  %.6f s\n", t_union);
+            std::printf("   matriz:                      %.6f s\n", t_matriz);
+            std::printf("   escritura del CSV:           %.6f s\n", t_escritura);
+            std::printf("Speed-up:                       %.3fx\n", speedup);
+            std::printf("Eficiencia (speed-up / q):      %.3f\n", speedup / q);
+            std::printf("Speed-up > 1.2x (requisito):    %s\n", speedup > 1.2 ? "SI" : "NO");
+            if (serial_medido_aqui)
+                std::printf("Resultado identico al serial:   %s\n", coincide ? "SI" : "NO (!!)");
+            else
+                std::printf("Resultado identico al serial:   no verificado aqui (usa scripts/validar.sh)\n");
+            std::printf("Salida: %s\n", args.salida.c_str());
+        }
         std::printf("#TIEMPO %.6f\n", t_total);  // linea para los scripts
         std::fflush(stdout);
         if (serial_medido_aqui && !coincide) return 3;
